@@ -1,1 +1,2 @@
-from ._proportion import ProportionKeywordExtractor
+from ._proportion import RelatedProportionKeywordExtractor
+from ._proportion import RelatedProportionClusteringLabeler
