@@ -1,15 +1,116 @@
+from collections import Counter
+from collections import defaultdict
+from collections import namedtuple
+from math import log
+import sys
+
+KeywordScore = namedtuple('KeywordScore', 'word frequency score')
+
 class RelatedProportionKeywordExtractor:
 
-    def __init__(self, min_count=20):
-        self.min_count = min_count
+    def __init__(self, min_tf=20, min_df=2, tokenize=lambda x:x.strip().split(), verbose=True):
+        self.min_tf = min_tf
+        self.min_df = min_df
+        self.tokenize = tokenize
+        self.verbose = verbose
+        
         self._d2t = None
         self._t2d = None
+        self.num_doc = 0
+        self.num_term = 0
+        self._tfs = None
 
-    def train(self, docs):
-        raise NotImplemented
+    def train(self, docs, temporal_pruning_points=100000, temporal_pruning_min_df=5):
+        self._d2t = {}
+        self._t2d = defaultdict(lambda: [])
+        for d, doc in enumerate(docs):
+            words = tuple(Counter(self.tokenize(doc)).items())
+            if not words:
+                continue
+            self._d2t[d] = words
+            for word, _ in words:
+                self._t2d[word].append(d)
+            if (d + 1) % temporal_pruning_points == 0:
+                self._pruning_under_min_df(temporal_pruning_min_df)
+            if self.verbose and ((d + 1) % 10000 == 0):
+                args = (len(self._t2d), d+1, len(docs), get_process_memory())
+                sys.stdout.write('\rtraining ... %d terms, %d in %d docs, memory = %.3f Gb' % args)
+                
+        self.num_doc = (d + 1)
+        self._t2d = dict(self._t2d)
+        
+        self._pruning_under_min_df(self.min_df)
+        self._df = {word:len(ds) for word, ds in self._t2d.items()}
+        self.num_term = len(self._df)
+        
+        self._sort_by_tfidf()
+        self._tfs = self._get_reference_sum()
+        
+        if self.verbose:
+            args = (len(self._t2d), self.num_doc, get_process_memory())
+            print('\rtraining was done %d terms, %d docs, memory = %.3f Gb' % args)
+        
+    def _pruning_under_min_df(self, min_df):
+        under_min_df = {word for word, ds in self._t2d.items() if len(ds) < min_df}
+        num_doc = len(self._d2t)
+        empty_docs = []
+        for d, tf in self._d2t.items():
+            ts = [(word, freq) for word, freq in tf if not (word in under_min_df)]
+            if not ts:
+                empty_docs.append(d)
+                continue
+            self._d2t[d] = ts
+        for d in empty_docs:
+            del self._d2t[d]
+        for word in under_min_df:
+            del self._t2d[word]
+    
+    def _sort_by_tfidf(self):
+        for d, tf in self._d2t.items():
+            tf = sorted(tf, key=lambda x:x[1] * (1 / (1+log(1 + self._df.get(x[0], 0)))), reverse=True)
+            self._d2t[d] = tf
+            
+    def _get_reference_sum(self):
+        sum_ = defaultdict(lambda: 0)
+        for d, ts in self._d2t.items():
+            for word, freq in ts:
+                sum_[word] += freq
+        return dict(sum_)
+    
+    def frequency(self, word):
+        return self._tfs.get(word, 0)
+            
+    def extract_from_word(self, word, min_count=20, min_score=0.75):
+        pos_idx = set(self._t2d.get(word, []))
+        if not pos_idx:
+            return []
+        return self.extract_from_docs(pos_idx, min_count, min_score)
+        
+    def extract_from_docs(self, docs, min_count=20, min_score=0.75):
+        ps = self._get_positive_sum(docs)
+        ns = self._get_negative_sum(ps)
+        pp = self._sum_to_proportion(ps)
+        np = self._sum_to_proportion(ns)
+        
+        s = {word:(p/(p+np.get(word, 0))) for word, p in pp.items()}
+        s = {word:score for word, score in s.items() if self.frequency(word) >= min_count and score >= min_score}
+        s = sorted(s.items(), key=lambda x:x[1], reverse=True)
+        s = [KeywordScore(word, self.frequency(word), score) for word, score in s]
+        return s
 
-    def extract_from_word(self, word):
-        raise NotImplemented
+    def _sum_to_proportion(self, sum_dict):
+        sum_ = sum(sum_dict.values())
+        return {word:(freq/sum_) for word, freq in sum_dict.items()}
+    
+    def _get_positive_sum(self, pos_idx):
+        sum_ = defaultdict(lambda: 0)
+        for d in pos_idx:
+            for word, freq in self._d2t.get(d, []):
+                sum_[word] += freq
+        return sum_
+    
+    def _get_negative_sum(self, pos_sum):
+        return {word:(freq - pos_sum.get(word, 0)) for word, freq in self._tfs.items()}
 
         
 class RelatedProportionClusteringLabeler:
