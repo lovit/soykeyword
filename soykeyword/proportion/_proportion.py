@@ -6,7 +6,7 @@ import sys
 
 KeywordScore = namedtuple('KeywordScore', 'word frequency score')
 
-class RelatedProportionKeywordExtractor:
+class CorpusbasedKeywordExtractor:
 
     def __init__(self, min_tf=20, min_df=2, tokenize=lambda x:x.strip().split(), verbose=True):
         self.min_tf = min_tf
@@ -113,7 +113,7 @@ class RelatedProportionKeywordExtractor:
         return {word:(freq - pos_sum.get(word, 0)) for word, freq in self._tfs.items()}
 
         
-class RelatedProportionClusteringLabeler:
+class MatrixbasedKeywordExtractor:
     
     def __init__(self, min_count=20, x):
         self.min_count = min_count

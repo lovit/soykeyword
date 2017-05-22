@@ -1,2 +1,2 @@
-from ._proportion import RelatedProportionKeywordExtractor
-from ._proportion import RelatedProportionClusteringLabeler
+from ._proportion import CorpusbasedKeywordExtractor
+from ._proportion import MatrixbasedKeywordExtractor
