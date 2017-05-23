@@ -3,6 +3,8 @@ from collections import defaultdict
 from collections import namedtuple
 from math import log
 import sys
+import numpy as np
+from scipy.sparse import csr_matrix
 
 KeywordScore = namedtuple('KeywordScore', 'word frequency score')
 
@@ -115,9 +117,65 @@ class CorpusbasedKeywordExtractor:
         
 class MatrixbasedKeywordExtractor:
     
-    def __init__(self, min_count=20, x):
-        self.min_count = min_count
-        self.x = x
+    def __init__(self, min_tf=20, min_df=2, verbose=True):
+        self.x = None
+        self.min_tf = min_tf
+        self.min_df = min_df
+        self.verbose = verbose
+        self._tfs = None
+        self.num_doc = 0
+        self.num_term = 0
         
-    def label_clusters(self, cluster_idx, alpha=0.5):
-        raise NotImplemented
+    def train(self, x):
+        self.num_doc, self.num_term = x.shape
+        
+        rows, cols = x.nonzero()
+        b = csr_matrix(([1] * len(rows), (rows, cols)))
+        self._df = dict(enumerate(b.sum(axis=0).tolist()[0]))
+        self._df = {word:df for word, df in self._df.items() if df >= self.min_df}
+        
+        self._tfs = dict(enumerate(x.sum(axis=0).tolist()[0]))
+        self._tfs = {word:freq for word, freq in self._tfs.items() if (freq >= self.min_df) and (word in self._df)}
+        
+        rows_ = []
+        cols_ = []
+        data_ = []
+        for r, c, d in zip(rows, cols, x.data):
+            if not (c in self._tfs):
+                continue
+            rows_.append(r)
+            cols_.append(c)
+            data_.append(d)
+        self.x = csr_matrix((data_, (rows_, cols_)))
+        print('MatrixbasedKeywordExtractor trained')
+
+    def extract_from_word(self, word, min_count=20, min_score=0.75):
+        pos_idx = x[:,word].nonzero()[0].tolist()
+        if not pos_idx:
+            return []
+        return self.extract_from_docs(pos_idx, min_count, min_score)
+        
+    def extract_from_docs(self, docs, min_count=20, min_score=0.75):
+        ps = self._get_positive_sum(docs)
+        ns = self._get_negative_sum(ps)
+        pp = self._sum_to_proportion(ps)
+        np = self._sum_to_proportion(ns)
+        
+        s = {word:(p/(p+np.get(word, 0))) for word, p in pp.items()}
+        s = {word:score for word, score in s.items() if self._tfs.get(word,0) >= min_count and score >= min_score}
+        s = sorted(s.items(), key=lambda x:x[1], reverse=True)
+        s = [KeywordScore(word, self._tfs.get(word, 0), score) for word, score in s]
+        return s
+    
+    def _sum_to_proportion(self, sum_dict):
+        sum_ = sum(sum_dict.values())
+        return {word:(freq/sum_) for word, freq in sum_dict.items()}
+    
+    def _get_positive_sum(self, pos_idx):
+        if type(pos_idx) != list:
+            pos_idx = list(pos_idx)
+        x_pos = self.x[pos_idx]
+        return {word:freq for word, freq in enumerate(x_pos.sum(axis=0).tolist()[0]) if freq > 0}
+        
+    def _get_negative_sum(self, pos_sum):
+        return {word:(freq - pos_sum.get(word, 0)) for word, freq in self._tfs.items()}
