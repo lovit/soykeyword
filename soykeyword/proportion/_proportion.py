@@ -150,7 +150,7 @@ class MatrixbasedKeywordExtractor:
         print('MatrixbasedKeywordExtractor trained')
 
     def extract_from_word(self, word, min_count=20, min_score=0.75):
-        pos_idx = x[:,word].nonzero()[0].tolist()
+        pos_idx = self.x[:,word].nonzero()[0].tolist()
         if not pos_idx:
             return []
         return self.extract_from_docs(pos_idx, min_count, min_score)
