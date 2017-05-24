@@ -13,6 +13,7 @@ class LassoKeywordExtractor:
         self.costs = sorted(self.costs)
         self.verbose = verbose
         self.index2word = index2word
+        self.word2index = {w:i for i,w in self.index2word.items()} if index2word else None
     
     def train(self, x):
         self.num_doc, self.num_term = x.shape
@@ -38,6 +39,10 @@ class LassoKeywordExtractor:
         self._is_empty = [1 if float(d[0]) == 0 else 0 for d in self.x.sum(axis=1)]
     
     def extract_from_word(self, word, minimum_number_of_keywords=5):
+        if type(word) == str:
+            if not self.word2index:
+                raise ValueError('You should set index2word first')
+            word = self.word2index.get(word, -1)
         if not (0 <= word < self.num_term):
             return []
         pos_idx = self.x[:,word].nonzero()[0].tolist()
