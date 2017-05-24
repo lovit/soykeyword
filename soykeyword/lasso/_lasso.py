@@ -48,8 +48,8 @@ class LassoKeywordExtractor:
         pos_idx = self.x[:,word].nonzero()[0].tolist()
         return self.extract_from_docs(pos_idx, minimum_number_of_keywords)
 
-    def extract_from_docs(self, docs, minimum_number_of_keywords=5):
-        pos_idx = set(docs)
+    def extract_from_docs(self, docs_idx, minimum_number_of_keywords=5):
+        pos_idx = set(docs_idx)
         y = [1 if (d in pos_idx and self._is_empty[d] == 0) else -1 for d in range(self.num_doc)]
         for c in self.costs:
             logistic = LogisticRegression(penalty='l1', C=c)
