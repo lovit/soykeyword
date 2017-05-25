@@ -1,5 +1,5 @@
 from description import __version__, __author__
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
    name="soykeyword",
@@ -12,5 +12,5 @@ setup(
    """,
    install_requires=["numpy", "scikit-learn", "soynlp>=0.0.17"],
    keywords = ['keyword extractor'],
-   packages=['soykeyword']
+   packages=find_packages()
 )
