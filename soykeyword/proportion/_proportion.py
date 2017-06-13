@@ -5,6 +5,7 @@ from math import log
 import sys
 import numpy as np
 from scipy.sparse import csr_matrix
+from soykeyword.utils import get_process_memory
 
 KeywordScore = namedtuple('KeywordScore', 'word frequency score')
 
@@ -83,10 +84,13 @@ class CorpusbasedKeywordExtractor:
         return self._tfs.get(word, 0)
             
     def extract_from_word(self, word, min_count=20, min_score=0.75):
-        pos_idx = set(self._t2d.get(word, []))
+        pos_idx = self.get_document_index(word)
         if not pos_idx:
             return []
         return self.extract_from_docs(pos_idx, min_count, min_score)
+    
+    def get_document_index(self, word):
+        return sorted(set(self._t2d.get(word, [])))
         
     def extract_from_docs(self, docs, min_count=20, min_score=0.75):
         ps = self._get_positive_sum(docs)
@@ -125,9 +129,13 @@ class MatrixbasedKeywordExtractor:
         self._tfs = None
         self.num_doc = 0
         self.num_term = 0
+        self.index2word = None
+        self.word2index = None
         
-    def train(self, x):
+    def train(self, x, index2word=None):
         self.num_doc, self.num_term = x.shape
+        self.index2word = index2word
+        self.word2index = {word:index for index, word in enumerate(index2word)} if index2word is not None else None
         
         rows, cols = x.nonzero()
         b = csr_matrix(([1] * len(rows), (rows, cols)))
@@ -150,11 +158,20 @@ class MatrixbasedKeywordExtractor:
         print('MatrixbasedKeywordExtractor trained')
 
     def extract_from_word(self, word, min_count=20, min_score=0.75):
-        pos_idx = self.x[:,word].nonzero()[0].tolist()
+        pos_idx = self.get_document_index(word)
         if not pos_idx:
             return []
         return self.extract_from_docs(pos_idx, min_count, min_score)
-        
+
+    def get_document_index(self, word):
+        if type(word) == str:
+            if not self.word2index:
+                raise ValueError('If you want to insert str word, you should trained index2word first')
+            word = self.word2index.get(word,-1)
+        if 0 <= word < self.num_term:
+            return self.x[:,word].nonzero()[0].tolist()
+        return []
+    
     def extract_from_docs(self, docs, min_count=20, min_score=0.75):
         ps = self._get_positive_sum(docs)
         ns = self._get_negative_sum(ps)
@@ -163,8 +180,10 @@ class MatrixbasedKeywordExtractor:
         
         s = {word:(p/(p+np.get(word, 0))) for word, p in pp.items()}
         s = {word:score for word, score in s.items() if self._tfs.get(word,0) >= min_count and score >= min_score}
+        if self.index2word:
+            s = {self.index2word[w] if 0 <= w < self.num_term else 'Unk%d'%w:score for w, score in s.items()}
         s = sorted(s.items(), key=lambda x:x[1], reverse=True)
-        s = [KeywordScore(word, self._tfs.get(word, 0), score) for word, score in s]
+        s = [KeywordScore(word, self._tfs.get(word, 0), score) for word, score in s]        
         return s
     
     def _sum_to_proportion(self, sum_dict):
