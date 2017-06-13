@@ -89,14 +89,16 @@ class LassoKeywordExtractor:
             logistic.fit(x_, y)
             coefficients = logistic.coef_.reshape(-1)
             keywords = sorted(enumerate(coefficients), key=lambda x:x[1], reverse=True)
-            keywords = [(word, coef) for word, coef in keywords if coef > 0]
+            keywords = [(word, self._tfs.get(word,0), coef) for word, coef in keywords if coef > 0]
             logistic = None
             if self.verbose:
                 print('%d keywords extracted from %.3f cost' % (len(keywords), c))
             if len(keywords) >= minimum_number_of_keywords:
                 break
         if self.index2word:
-            keywords = [KeywordScore(self.index2word[word] if 0 <= word < self.num_term else 'Unk%d'%word, self._tfs.get(word,0), coef) for word, coef in keywords]
+            keywords = [KeywordScore(self.index2word[word] if 0 <= word < self.num_term else 'Unk%d'%word, tf, coef) for word, tf, coef in keywords]
+        else:
+            keywords = [KeywordScore(word, tf, coef) for word, tf, coef in keywords]
         return keywords
 
 
