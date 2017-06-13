@@ -10,7 +10,7 @@ setup(
    description="Unsupervised Korean Natural Language Processing Toolkits",
    long_description="""It contains two keyword extraction algorithms. First one uses Lasso logistic regression and the other uses relative proportion ratio
    """,
-   install_requires=["numpy", "scikit-learn", "soynlp>=0.0.17"],
+   install_requires=["numpy", "scikit-learn", "soynlp>=0.0.17", "psutil>=5.0.1"],
    keywords = ['keyword extractor'],
    packages=find_packages()
 )

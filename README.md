@@ -19,3 +19,4 @@ Following packages are helpful
 
 - numpy 
 - scikit-learn
+- psutil >=5.0.1
