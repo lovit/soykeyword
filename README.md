@@ -15,6 +15,10 @@ Following packages are helpful
 
 	> pip install soynlp
 
+## Install
+
+	> pip install soykeyword
+
 ## Requires
 
 - numpy 
