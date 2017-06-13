@@ -1,7 +1,7 @@
 # Soy Keyword Extractor 
 
 - pure Python code
-- author: Lovit (Hyunjoong Kim)
+- author: [Lovit (Hyunjoong Kim)](https://github.com/lovit) and [Hunsik Shin](https://github.com/hunsik)
 
 Following packages are helpful
 
