@@ -83,20 +83,35 @@ class CorpusbasedKeywordExtractor:
     def frequency(self, word):
         return self._tfs.get(word, 0)
             
-    def extract_from_word(self, word, min_count=20, min_score=0.75):
-        pos_idx = self.get_document_index(word)
+    def extract_from_word(self, words, reference_words=None, min_count=20, min_score=0.75):
+        pos_idx = self.get_document_index(words)
         if not pos_idx:
             return []
-        return self.extract_from_docs(pos_idx, min_count, min_score)
+        ref_idx = self.get_document_index(reference_words) if reference_words else None
+        return self.extract_from_docs(pos_idx, ref_idx, min_count, min_score)
     
-    def get_document_index(self, word):
-        return sorted(set(self._t2d.get(word, [])))
+    def get_document_index(self, words):
+        if type(words) == str:
+            return sorted(set(self._t2d.get(words, [])))
+        if type(words) == list or type(words) == set:
+            docs = set()
+            for word in words:
+                docs.update(set(self._t2d.get(word, [])))
+            return sorted(docs)
         
-    def extract_from_docs(self, docs, min_count=20, min_score=0.75):
+    def extract_from_docs(self, docs, reference=None, min_count=20, min_score=0.75):
         ps = self._get_positive_sum(docs)
-        ns = self._get_negative_sum(ps)
         pp = self._sum_to_proportion(ps)
-        np = self._sum_to_proportion(ns)
+        
+        if reference and (type(reference) == set) or (type(reference) == list):
+            ns = self._get_positive_sum(reference)
+            np = self._sum_to_proportion(ns)
+        elif reference and type(reference) == dict:
+            sum_ = sum(reference.values())
+            np = {word:(freq/sum_) for word, freq in reference.items()}
+        else:
+            ns = self._get_negative_sum(ps)        
+            np = self._sum_to_proportion(ns)
         
         s = {word:(p/(p+np.get(word, 0))) for word, p in pp.items()}
         s = {word:score for word, score in s.items() if self.frequency(word) >= min_count and score >= min_score}
