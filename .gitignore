@@ -16,3 +16,4 @@ tmp/
 
 # Tutorials
 tutorials/config.py
+tutorials/param*
