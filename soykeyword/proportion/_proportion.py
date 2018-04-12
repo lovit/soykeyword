@@ -188,6 +188,12 @@ class MatrixbasedKeywordExtractor:
         return []
     
     def extract_from_docs(self, docs, min_count=20, min_score=0.75):
+        def decode(word_idx):
+            if 0 <= word_idx < self.num_term:
+                return self.index2word[word_idx]
+            else:
+                return 'Unk%d' % word_idx
+
         ps = self._get_positive_sum(docs)
         ns = self._get_negative_sum(ps)
         pp = self._sum_to_proportion(ps)
@@ -195,10 +201,13 @@ class MatrixbasedKeywordExtractor:
         
         s = {word:(p/(p+np.get(word, 0))) for word, p in pp.items()}
         s = {word:score for word, score in s.items() if self._tfs.get(word,0) >= min_count and score >= min_score}
-        if self.index2word:
-            s = {self.index2word[w] if 0 <= w < self.num_term else 'Unk%d'%w:score for w, score in s.items()}
         s = sorted(s.items(), key=lambda x:x[1], reverse=True)
-        s = [KeywordScore(word, self._tfs.get(word, 0), score) for word, score in s]        
+
+        if self.index2word:
+            s = [KeywordScore(decode(word), self._tfs.get(word, 0), score) for word, score in s]
+        else:
+            s = [KeywordScore(word, self._tfs.get(word, 0), score) for word, score in s]
+
         return s
     
     def _sum_to_proportion(self, sum_dict):
