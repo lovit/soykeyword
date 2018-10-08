@@ -34,14 +34,14 @@ soykeyword 에서 추출하는 키워드와 연관어는 다음과 같이 정의
 
     keywords = lassobased_extractor.extract_from_docs(
         documents, 
-        minimum_number_of_keywords=30
+        min_num_of_keywords=30
     )
 
 연관어는 extract_from_word 에 단어를 입력하면 됩니다.
 
     lassobased_extractor.extract_from_word(
         '아이오아이',
-        minimum_number_of_keywords=30
+        min_num_of_keywords=30
     )
 
 하루 뉴스를 기준으로 '아이오아이'의 연관어를 추출한 예시입니다.
@@ -89,7 +89,7 @@ score(w) = P(w|pos) / { P(w|pos) + P(w|neg) }
     keywords = corpusbased_extractor.extract_from_docs(
         documents,
         min_score=0.8,
-        min_count=100
+        min_frequency=100
     )
 
 연관어를 추출할 단어 word 를 입력합니다. 
@@ -97,7 +97,7 @@ score(w) = P(w|pos) / { P(w|pos) + P(w|neg) }
     keywords = corpusbased_extractor.extract_from_word(
         '아이오아이',
         min_score=0.8,
-        min_count=100
+        min_frequency=100
     )
 
 하루의 뉴스를 바탕으로 추출한 아이오아이의 연관어 입니다. 
