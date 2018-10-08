@@ -43,10 +43,10 @@ class LassoKeywordExtractor:
         self.x = csr_matrix((data_, (rows_, cols_)))
         self._is_empty = [1 if float(d[0]) == 0 else 0 for d in self.x.sum(axis=1)]
     
-    def extract_from_word(self, word, minimum_number_of_keywords=5):
+    def extract_from_word(self, word, min_num_of_keywords=5):
         word = self._encoding(word)
         pos_idx = self.get_document_index(word)
-        return self.extract_from_docs(pos_idx, minimum_number_of_keywords, except_words={word})
+        return self.extract_from_docs(pos_idx, min_num_of_keywords, except_words={word})
     
     def _encoding(self, word):
         if type(word) == str:
@@ -61,7 +61,7 @@ class LassoKeywordExtractor:
             return []
         return self.x[:,word].nonzero()[0].tolist()
         
-    def extract_from_docs(self, docs_idx, minimum_number_of_keywords=5, except_words=None):
+    def extract_from_docs(self, docs_idx, min_num_of_keywords=5, except_words=None):
         pos_idx = set(docs_idx)
         y = [1 if (d in pos_idx and self._is_empty[d] == 0) else -1 for d in range(self.num_doc)]
         if (1 in set(y)) == False:
@@ -93,7 +93,7 @@ class LassoKeywordExtractor:
             logistic = None
             if self.verbose:
                 print('%d keywords extracted from %.3f cost' % (len(keywords), c))
-            if len(keywords) >= minimum_number_of_keywords:
+            if len(keywords) >= min_num_of_keywords:
                 break
         if self.index2word:
             keywords = [KeywordScore(self.index2word[word] if 0 <= word < self.num_term else 'Unk%d'%word, tf, coef) for word, tf, coef in keywords]
@@ -107,12 +107,12 @@ class LassoClusteringLabeler(LassoKeywordExtractor):
     def __init__(self, min_tf=20, min_df=10, costs=None, verbose=True):
         super().__init__(min_tf, min_df, costs, verbose)
         
-    def label_clusters(self, cluster_idx, minimum_number_of_keywords=5):
+    def label_clusters(self, cluster_idx, min_num_of_keywords=5):
         groups = sorted(enumerate(cluster_idx), key=itemgetter(1))
         groups = {group:[d for d, g in docs] for group, docs in groupby(groups, key=itemgetter(1))}
         labels = {}
         for cluster, docs in groups.items():
             if self.verbose:
                 print('labeling cluster = %d' % cluster)
-            labels[cluster] = self.extract_from_docs(docs, minimum_number_of_keywords)
+            labels[cluster] = self.extract_from_docs(docs, min_num_of_keywords)
         return sorted(labels.items())

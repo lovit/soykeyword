@@ -83,12 +83,12 @@ class CorpusbasedKeywordExtractor:
     def frequency(self, word):
         return self._tfs.get(word, 0)
             
-    def extract_from_word(self, words, reference_words=None, min_count=20, min_score=0.75):
+    def extract_from_word(self, words, reference_words=None, min_frequency=20, min_score=0.75):
         pos_idx = self.get_document_index(words)
         if not pos_idx:
             return []
         ref_idx = self.get_document_index(reference_words) if reference_words else None
-        return self.extract_from_docs(pos_idx, ref_idx, min_count, min_score)
+        return self.extract_from_docs(pos_idx, ref_idx, min_frequency, min_score)
     
     def get_document_index(self, words):
         if type(words) == str:
@@ -99,7 +99,7 @@ class CorpusbasedKeywordExtractor:
                 docs.update(set(self._t2d.get(word, [])))
             return sorted(docs)
         
-    def extract_from_docs(self, docs, reference=None, min_count=20, min_score=0.75):
+    def extract_from_docs(self, docs, reference=None, min_frequency=20, min_score=0.75):
         ps = self._get_positive_sum(docs)
         pp = self._sum_to_proportion(ps)
         
@@ -114,7 +114,7 @@ class CorpusbasedKeywordExtractor:
             np = self._sum_to_proportion(ns)
         
         s = {word:(p/(p+np.get(word, 0))) for word, p in pp.items()}
-        s = {word:score for word, score in s.items() if self.frequency(word) >= min_count and score >= min_score}
+        s = {word:score for word, score in s.items() if self.frequency(word) >= min_frequency and score >= min_score}
         s = sorted(s.items(), key=lambda x:x[1], reverse=True)
         s = [KeywordScore(word, self.frequency(word), score) for word, score in s]
         return s
@@ -172,11 +172,11 @@ class MatrixbasedKeywordExtractor:
         self.x = csr_matrix((data_, (rows_, cols_)))
         print('MatrixbasedKeywordExtractor trained')
 
-    def extract_from_word(self, word, min_count=20, min_score=0.75):
+    def extract_from_word(self, word, min_frequency=20, min_score=0.75):
         pos_idx = self.get_document_index(word)
         if not pos_idx:
             return []
-        return self.extract_from_docs(pos_idx, min_count, min_score)
+        return self.extract_from_docs(pos_idx, min_frequency, min_score)
 
     def get_document_index(self, word):
         if type(word) == str:
@@ -187,7 +187,7 @@ class MatrixbasedKeywordExtractor:
             return self.x[:,word].nonzero()[0].tolist()
         return []
     
-    def extract_from_docs(self, docs, min_count=20, min_score=0.75):
+    def extract_from_docs(self, docs, min_frequency=20, min_score=0.75):
         def decode(word_idx):
             if 0 <= word_idx < self.num_term:
                 return self.index2word[word_idx]
@@ -200,7 +200,7 @@ class MatrixbasedKeywordExtractor:
         np = self._sum_to_proportion(ns)
         
         s = {word:(p/(p+np.get(word, 0))) for word, p in pp.items()}
-        s = {word:score for word, score in s.items() if self._tfs.get(word,0) >= min_count and score >= min_score}
+        s = {word:score for word, score in s.items() if self._tfs.get(word,0) >= min_frequency and score >= min_score}
         s = sorted(s.items(), key=lambda x:x[1], reverse=True)
 
         if self.index2word:
