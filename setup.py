@@ -1,16 +1,27 @@
-from description import __version__, __author__
+import sys
+sys.path.insert(0, './')
+import soykeyword
+
+import setuptools
 from setuptools import setup, find_packages
 
-setup(
-   name="soykeyword",
-   version=__version__,
-   author=__author__,
-   author_email='soy.lovit@gmail.com',
-   url='https://github.com/lovit/soynlp',
-   description="Unsupervised Korean Natural Language Processing Toolkits",
-   long_description="""It contains two keyword extraction algorithms. First one uses Lasso logistic regression and the other uses relative proportion ratio
-   """,
-   install_requires=["numpy>=1.12.0", "scikit-learn>=0.18.0", "soynlp>=0.0.17", "psutil>=5.0.1"],
-   keywords = ['keyword extractor'],
-   packages=find_packages()
+with open('README.md', encoding='utf-8') as fh:
+    long_description = fh.read()
+
+setuptools.setup(
+    name="soykeyword",
+    version=soykeyword.__version__,
+    author=soykeyword.__author__,
+    author_email='soy.lovit@gmail.com',
+    description="Unsupervised Keyword Extracters",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url='https://github.com/lovit/soykeyword',
+    packages=setuptools.find_packages(),
+    install_requires=["numpy>=1.12.0", "scikit-learn>=0.18.0", "psutil>=5.0.1"],
+    classifiers=(
+        "Programming Language :: Python :: 3.6",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Operating System :: OS Independent",
+    ),
 )
