@@ -29,7 +29,7 @@ class LassoKeywordExtractor:
         _df = {word:df for word, df in _df.items() if df >= self.min_df}
         
         self._tfs = dict(enumerate(x.sum(axis=0).tolist()[0]))
-        self._tfs = {word:freq for word, freq in self._tfs.items() if (freq >= self.min_df) and (word in _df)}
+        self._tfs = {word:freq for word, freq in self._tfs.items() if (freq >= self.min_tf) and (word in _df)}
         
         rows_ = []
         cols_ = []
