@@ -85,7 +85,7 @@ class LassoKeywordExtractor:
             x_ = self.x
         
         for c in self.costs:
-            logistic = LogisticRegression(penalty='l1', C=c)
+            logistic = LogisticRegression(penalty='l1', C=c, solver='liblinear')
             logistic.fit(x_, y)
             coefficients = logistic.coef_.reshape(-1)
             keywords = sorted(enumerate(coefficients), key=lambda x:x[1], reverse=True)
